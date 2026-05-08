@@ -6,6 +6,8 @@ const STATE_FILE = '.state.json';
 const TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT  = process.env.TELEGRAM_CHAT_ID;
 
+const sendIfOutOfStock = true;
+
 if (!TOKEN || !CHAT) {
   console.error('missing TELEGRAM_TOKEN or TELEGRAM_CHAT_ID');
   process.exit(1);
@@ -24,20 +26,17 @@ const html = await fetch(URL, {
 const outOfStock = html.includes(SENTINEL);
 const prev = JSON.parse(readFileSync(STATE_FILE, 'utf8'));
 
-console.log(`prev=${prev.outOfStock} now=${outOfStock}`);
+console.log(`prev=${prev.outOfStock} now=${outOfStock} sendIfOutOfStock=${sendIfOutOfStock}`);
 
 const transitionToInStock = prev.outOfStock === true && outOfStock === false;
 
-if (transitionToInStock) {
-  const msg =
-    `🎉 <b>ערכת החלומות של שילב חזרה למלאי!</b> 🎉\n\n` +
-    `👉 <a href="${URL}">לחצו כאן להזמנה</a>`;
+async function tg(text) {
   const res = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: CHAT,
-      text: msg,
+      text,
       parse_mode: 'HTML',
       disable_web_page_preview: false,
     }),
@@ -46,7 +45,17 @@ if (transitionToInStock) {
     console.error('telegram', res.status, await res.text());
     process.exit(1);
   }
+}
+
+if (transitionToInStock) {
+  await tg(
+    `🎉 <b>ערכת החלומות של שילב חזרה למלאי!</b> 🎉\n\n` +
+    `👉 <a href="${URL}">לחצו כאן להזמנה</a>`
+  );
   console.log('alert sent');
+} else if (sendIfOutOfStock && outOfStock) {
+  await tg(`🔍 <i>debug:</i> watcher alive, kit still out of stock — ${new Date().toISOString()}`);
+  console.log('debug ping sent');
 }
 
 if (outOfStock !== prev.outOfStock) {
