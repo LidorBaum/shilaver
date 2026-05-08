@@ -6,7 +6,7 @@ const STATE_FILE = '.state.json';
 const TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT  = process.env.TELEGRAM_CHAT_ID;
 
-const sendIfOutOfStock = true;
+const sendIfOutOfStock = false;
 
 if (!TOKEN || !CHAT) {
   console.error('missing TELEGRAM_TOKEN or TELEGRAM_CHAT_ID');
