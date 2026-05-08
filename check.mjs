@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const URL = 'https://lp.vp4.me/jzze';
-const SENTINEL = 'הביקוש לערכה היה 1 עצום והמלאי אזל תוך זמן קצר';
+const SENTINEL = 'הביקוש לערכה היה עצום והמלאי אזל תוך זמן קצר';
 const STATE_FILE = '.state.json';
 const TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT  = process.env.TELEGRAM_CHAT_ID;
