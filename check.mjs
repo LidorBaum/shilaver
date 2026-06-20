@@ -29,7 +29,7 @@ const SITES = [
   },
   {
     enabled: true,
-    alwaysSend: true,
+    alwaysSend: false,
     id: 'eventer-nostalgia',
     url: 'https://www.eventer.co.il/mesibatanostalgialehet2',
     // eventer is an Angular SPA: the page HTML is empty and the configured
