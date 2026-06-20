@@ -4,22 +4,22 @@ const STATE_FILE = '.state.json';
 const TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT  = process.env.TELEGRAM_CHAT_ID;
 
-// debug: also ping while still out of stock, to prove the watcher is alive
-const sendIfOutOfStock = false;
-
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
 // Each site:
-//   enabled  set false to skip the site entirely
-//   id       state key (stable, never change it)
-//   url      human link shown in the alert
-//   fetchUrl what we actually GET to decide stock (defaults to url)
-//   detect   (responseText) => true when OUT of stock
-//   title    headline of the "back in stock" alert
-//   cta      link text of the alert
+//   enabled    set false to skip the site entirely
+//   alwaysSend send a heartbeat EVERY run (even when still out of stock), to
+//              prove the watcher is alive. independent of the real alert.
+//   id         state key (stable, never change it)
+//   url        human link shown in the alert
+//   fetchUrl   what we actually GET to decide stock (defaults to url)
+//   detect     (responseText) => true when OUT of stock
+//   title      headline of the "back in stock" alert
+//   cta        link text of the alert
 const SITES = [
   {
     enabled: false,
+    alwaysSend: false,
     id: 'jzze',
     url: 'https://lp.vp4.me/jzze',
     // landing page renders this text only while sold out
@@ -29,6 +29,7 @@ const SITES = [
   },
   {
     enabled: true,
+    alwaysSend: true,
     id: 'eventer-nostalgia',
     url: 'https://www.eventer.co.il/mesibatanostalgialehet2',
     // eventer is an Angular SPA: the page HTML is empty and the configured
@@ -44,7 +45,7 @@ const SITES = [
       // two independent "back in stock" signals, OR'd: if EITHER flips we alert.
       const buyable      = types.some(t => Number(t.price) >= 0 && t.remaining !== 0);
       const offerInStock = offers.some(o => !String(o.availability).includes('SoldOut'));
-      return (buyable || offerInStock);
+      return !(buyable || offerInStock);
     },
     title: 'כרטיסים חזרו למכירה — מסיבתה נוסטלגיה, חוזרים ללכת! 🌙',
     cta: 'לחצו כאן לרכישה',
@@ -108,9 +109,12 @@ for (const site of SITES) {
       `👉 <a href="${site.url}">${site.cta}</a>`
     );
     console.log(`[${site.id}] alert sent`);
-  } else if (sendIfOutOfStock && outOfStock) {
-    await tg(`🔍 <i>debug:</i> watcher alive, ${site.id} still out of stock — ${new Date().toISOString()}`);
-    console.log(`[${site.id}] debug ping sent`);
+  }
+
+  if (site.alwaysSend) {
+    const status = outOfStock ? 'אזל מהמלאי ❌' : 'במלאי ✅';
+    await tg(`🔁 <i>בדיקה:</i> ${site.id} — ${status} — ${new Date().toISOString()}`);
+    console.log(`[${site.id}] heartbeat sent`);
   }
 
   if (outOfStock !== prev.outOfStock) {
